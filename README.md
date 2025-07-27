@@ -6,7 +6,7 @@
 
 A full-stack, intelligent **Onebox Email Aggregator**, inspired by tools like **Reachinbox**. This system allows users to connect multiple IMAP email accounts, sync emails in real-time, search them with Elasticsearch, auto-categorize with AI, receive Slack/webhook alerts, and even generate smart reply suggestions.
 
-> 🚀 Built with Node.js, TypeScript, Docker, Elasticsearch, OpenAI, and IMAP.
+> 🚀 Built with Node.js, JavaScript, Docker, Elasticsearch, OpenAI, and IMAP.
 
 ---
 
@@ -55,7 +55,7 @@ A full-stack, intelligent **Onebox Email Aggregator**, inspired by tools like **
 
 | Layer        | Tools Used                                   |
 |--------------|----------------------------------------------|
-| Backend      | Node.js, Express, TypeScript                 |
+| Backend      | Node.js, Express, JavaScript                 |
 | Email Sync   | IMAP (node-imap), IDLE mode                  |
 | Search       | Elasticsearch (Docker-based)                |
 | AI/NLP       | OpenAI API, RAG, Vector DB (e.g., FAISS)     |
