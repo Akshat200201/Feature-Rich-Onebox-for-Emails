@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-IMAP Email Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+        
+        #accounts {
+            width: 200px;
+            background-color: #f5f5f5;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .account {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .account.active {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+        
+        #email-list {
+            width: 350px;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .email-item {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .email-item:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .email-item.active {
+            background-color: #e0e0e0;
+        }
+        
+        .email-subject {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .email-from {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 3px;
+        }
+        
+        .email-date {
+            color: #999;
+            font-size: 0.8em;
+        }
+        
+        /* Classification badge styles */
+        .classification-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .classification-Interested {
+            background-color: #4CAF50;
+        }
+        
+        .classification-Meeting-Booked {
+            background-color: #2196F3;
+        }
+        
+        .classification-Not-Interested {
+            background-color: #F44336;
+        }
+        
+        .classification-Spam {
+            background-color: #FF9800;
+        }
+        
+        .classification-Out-of-Office {
+            background-color: #9E9E9E;
+        }
+        
+        .classification-Uncategorized {
+            background-color: #9C27B0;
+        }
+        
+        #email-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        #email-header {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        #email-body {
+            line-height: 1.5;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-style: italic;
+            color: #666;
+        }
+        
+        /* Classification section */
+        #classification-section {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        
+        #classification-dropdown {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        
+        /* New Search Styles */
+        .search-container {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            background-color: #f5f5f5;
+        }
+        
+        #search-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .match-highlight {
+            background-color: #ffeb3b;
+            font-weight: bold;
+        }
+        
+        #search-results {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .search-count {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+            text-align: right;
+        }
+        
+        /* Filter styles */
+        .filter-container {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            background-color: #f5f5f5;
+        }
+        
+        #classification-filter {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        
+        /* Reply generation styles */
+        .reply-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border: 1px solid #b0d4f1;
+            border-radius: 8px;
+        }
+        
+        .reply-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .reply-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            font-family: inherit;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .reply-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .reply-source {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div id="accounts">
+        <h3 style="padding: 10px; margin: 0;">Accounts</h3>
+        <div id="account-list"></div>
+    </div>
+    
+    <div id="email-list">
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search emails...">
+            <div class="filter-container">
+                <label for="classification-filter">Filter by:</label>
+                <select id="classification-filter">
+                    <option value="all">All Emails</option>
+                    <option value="Interested">Interested</option>
+                    <option value="Meeting Booked">Meeting Booked</option>
+                    <option value="Not Interested">Not Interested</option>
+                    <option value="Spam">Spam</option>
+                    <option value="Out of Office">Out of Office</option>
+                    <option value="Uncategorized">Uncategorized</option>
+                </select>
+            </div>
+            <div class="search-count" id="search-count"></div>
+        </div>
+        <div id="search-results">
+            <div class="loading">Select an account to view emails</div>
+        </div>
+    </div>
+    
+    <div id="email-content">
+        <div class="loading">Select an email to view its content</div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Connect to WebSocket server
+        const socket = io();
+        
+        // Store emails data with classifications
+        const emailsData = {
+            account1: [],
+            account2: []
+        };
+        
+        // Store email classifications
+        const emailClassifications = {};
+        
+        // Store generated replies
+        const generatedReplies = {};
+        
+        let currentAccount = null;
+        let currentEmail = null;
+        let searchQuery = '';
+        let selectedClassification = 'all';
+        
+        // DOM elements
+        const accountList = document.getElementById('account-list');
+        const emailList = document.getElementById('search-results');
+        const emailContent = document.getElementById('email-content');
+        const searchInput = document.getElementById('search-input');
+        const searchCount = document.getElementById('search-count');
+        const classificationFilter = document.getElementById('classification-filter');
+        
+        // Initialize accounts
+        const accounts = [
+            { id: 'account1', name: 'Account 1' },
+            { id: 'account2', name: 'Account 2' }
+        ];
+        
+        // Render accounts
+        function renderAccounts() {
+            accountList.innerHTML = accounts.map(account => `
+                <div class="account ${currentAccount === account.id ? 'active' : ''}" 
+                     data-id="${account.id}">
+                    ${account.name}
+                </div>
+            `).join('');
+            
+            // Add event listeners
+            document.querySelectorAll('.account').forEach(el => {
+                el.addEventListener('click', function() {
+                    currentAccount = this.dataset.id;
+                    renderAccounts();
+                    renderEmails();
+                });
+            });
+        }
+        
+        // Search and filter emails
+        function searchAndFilterEmails() {
+            if (!currentAccount) {
+                emailList.innerHTML = '<div class="loading">Select an account to view emails</div>';
+                searchCount.textContent = '';
+                return;
+            }
+            
+            const emails = emailsData[currentAccount];
+            
+            if (!emails || emails.length === 0) {
+                emailList.innerHTML = '<div class="loading">No emails found or still loading...</div>';
+                searchCount.textContent = '';
+                return;
+            }
+            
+            // Filter emails based on search query and classification
+            let filteredEmails = emails;
+            
+            // Apply search filter if query exists
+            if (searchQuery) {
+                filteredEmails = filteredEmails.filter(email => {
+                    const subject = email.headers.subject ? email.headers.subject[0].toLowerCase() : '';
+                    const from = email.headers.from ? email.headers.from[0].toLowerCase() : '';
+                    const searchLower = searchQuery.toLowerCase();
+                    
+                    return subject.includes(searchLower) || from.includes(searchLower);
+                });
+            }
+            
+            // Apply classification filter if not "all"
+            if (selectedClassification !== 'all') {
+                filteredEmails = filteredEmails.filter(email => {
+                    const key = `${email.accountId}-${email.uid}`;
+                    return emailClassifications[key] === selectedClassification;
+                });
+            }
+            
+            // Update search count
+            searchCount.textContent = `${filteredEmails.length} of ${emails.length} emails`;
+            
+            if (filteredEmails.length === 0) {
+                emailList.innerHTML = '<div class="loading">No matching emails found</div>';
+                return;
+            }
+            
+            // Render filtered emails
+            emailList.innerHTML = filteredEmails.map(email => {
+                const subject = email.headers.subject ? email.headers.subject[0] : '(No subject)';
+                const from = email.headers.from ? email.headers.from[0] : 'Unknown sender';
+                const date = email.headers.date ? new Date(email.headers.date[0]).toLocaleString() : '';
+                
+                // Get classification
+                const key = `${email.accountId}-${email.uid}`;
+                const classification = emailClassifications[key] || email.classification || 'Uncategorized';
+                
+                // Highlight matched text
+                let highlightedSubject = subject;
+                let highlightedFrom = from;
+                
+                if (searchQuery) {
+                    const regex = new RegExp(`(${escapeRegExp(searchQuery)})`, 'gi');
+                    highlightedSubject = subject.replace(regex, '<span class="match-highlight">$1</span>');
+                    highlightedFrom = from.replace(regex, '<span class="match-highlight">$1</span>');
+                }
+                
+                return `
+                    <div class="email-item ${currentEmail === email.uid ? 'active' : ''}" 
+                         data-uid="${email.uid}" data-account="${currentAccount}">
+                        <div class="classification-badge classification-${classification.replace(/\s+/g, '-')}">${classification}</div>
+                        <div class="email-subject">${highlightedSubject}</div>
+                        <div class="email-from">${highlightedFrom}</div>
+                        <div class="email-date">${date}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Add event listeners
+            document.querySelectorAll('.email-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const uid = this.dataset.uid;
+                    const accountId = this.dataset.account;
+                    
+                    currentEmail = uid;
+                    renderEmails();
+                    
+                    emailContent.innerHTML = '<div class="loading">Loading email content...</div>';
+                    
+                    // Request email content
+                    socket.emit('fetch-email', { accountId, uid });
+                });
+            });
+        }
+        
+        // Helper function to escape regex special characters
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // Render emails for the selected account
+        function renderEmails() {
+            searchAndFilterEmails();
+        }
+        
+        // Render email content
+        function renderEmailContent(data) {
+            const { content, classification, accountId, uid } = data;
+            
+            // Store the classification
+            const key = `${accountId}-${uid}`;
+            emailClassifications[key] = classification || 'Uncategorized';
+            
+            let attachmentsHtml = '';
+            if (content.attachments && content.attachments.length > 0) {
+                attachmentsHtml = `
+                    <div id="attachments">
+                        <h3>Attachments</h3>
+                        <ul>
+                            ${content.attachments.map(att => `<li>${att.filename} (${Math.round(att.size / 1024)} KB)</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Highlight search term in content if present
+            let bodyContent = content.html || content.text || 'No content';
+            
+            if (searchQuery && bodyContent !== 'No content') {
+                // Only attempt highlighting if we have a text version
+                if (content.text) {
+                    const textContent = content.text;
+                    const regex = new RegExp(`(${escapeRegExp(searchQuery)})`, 'gi');
+                    const highlightedText = textContent.replace(regex, '<span class="match-highlight">$1</span>');
+                    
+                    // If we have HTML content, we'll still display that but note that search terms are found
+                    if (content.html) {
+                        bodyContent = content.html + 
+                            `<div style="margin-top: 20px; padding: 10px; background-color: #f5f5f5; border-left: 4px solid #ffeb3b;">
+                                <strong>Search matches found!</strong> View the plain text version below:
+                                <pre style="margin-top: 10px; white-space: pre-wrap;">${highlightedText}</pre>
+                            </div>`;
+                    } else {
+                        bodyContent = `<div>${highlightedText}</div>`;
+                    }
+                }
+            }
+            
+            // Create classification selector
+            const classificationSelector = `
+                <div id="classification-section">
+                    <strong>Classification:</strong> 
+                    <select id="classification-dropdown" data-account="${accountId}" data-uid="${uid}">
+                        <option value="Interested" ${classification === 'Interested' ? 'selected' : ''}>Interested</option>
+                        <option value="Meeting Booked" ${classification === 'Meeting Booked' ? 'selected' : ''}>Meeting Booked</option>
+                        <option value="Not Interested" ${classification === 'Not Interested' ? 'selected' : ''}>Not Interested</option>
+                        <option value="Spam" ${classification === 'Spam' ? 'selected' : ''}>Spam</option>
+                        <option value="Out of Office" ${classification === 'Out of Office' ? 'selected' : ''}>Out of Office</option>
+                        <option value="Uncategorized" ${classification === 'Uncategorized' ? 'selected' : ''}>Uncategorized</option>
+                    </select>
+                </div>
+            `;
+            
+            // Check if we have a generated reply for this email
+            const replyKey = `${accountId}-${uid}`;
+            const existingReply = generatedReplies[replyKey];
+            
+            // Create reply section
+            const replySection = existingReply ? `
+                <div class="reply-section">
+                    <div class="reply-header">
+                        <h3>Generated Reply</h3>
+                        <span class="reply-source">Source: ${existingReply.source}</span>
+                    </div>
+                    <div class="reply-content">${existingReply.reply}</div>
+                    <div class="reply-actions">
+                        <button class="btn btn-primary" onclick="copyReplyToClipboard('${replyKey}')">Copy to Clipboard</button>
+                        <button class="btn btn-secondary" onclick="generateNewReply('${accountId}', '${uid}')">Generate New Reply</button>
+                    </div>
+                </div>
+            ` : `
+                <div class="reply-section">
+                    <div class="reply-header">
+                        <h3>AI Reply Generation</h3>
+                    </div>
+                    <p>Click the button below to generate a personalized reply for this email:</p>
+                    <div class="reply-actions">
+                        <button class="btn btn-primary" id="generate-reply-btn" onclick="generateReply('${accountId}', '${uid}')">
+                            Generate Personalized Reply
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            emailContent.innerHTML = `
+                <div id="email-header">
+                    <h2>${content.subject || '(No subject)'}</h2>
+                    <div class="classification-badge classification-${classification.replace(/\s+/g, '-')}">${classification}</div>
+                    <p><strong>From:</strong> ${content.from ? content.from.text : 'Unknown'}</p>
+                    <p><strong>To:</strong> ${content.to ? content.to.text : 'Unknown'}</p>
+                    <p><strong>Date:</strong> ${content.date ? new Date(content.date).toLocaleString() : 'Unknown'}</p>
+                    ${classificationSelector}
+                </div>
+                
+                <div id="email-body">
+                    ${bodyContent}
+                </div>
+                
+                ${attachmentsHtml}
+                
+                ${replySection}
+            `;
+            
+            // Add event listener for classification dropdown
+            document.getElementById('classification-dropdown').addEventListener('change', function() {
+                const accountId = this.dataset.account;
+                const uid = this.dataset.uid;
+                const newClassification = this.value;
+                
+                // Update stored classification
+                const key = `${accountId}-${uid}`;
+                emailClassifications[key] = newClassification;
+                
+                // Update the badge in the header
+                const badge = document.querySelector('#email-header .classification-badge');
+                badge.textContent = newClassification;
+                badge.className = `classification-badge classification-${newClassification.replace(/\s+/g, '-')}`;
+                
+                // Refresh email list to update badges there
+                renderEmails();
+            });
+        }
+        
+        // Reply generation functions
+        function generateReply(accountId, uid) {
+            const button = document.getElementById('generate-reply-btn');
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Generating Reply...';
+            }
+            
+            console.log(`Requesting reply generation for ${accountId}:${uid}`);
+            socket.emit('generate-reply', { accountId, uid });
+        }
+        
+        function generateNewReply(accountId, uid) {
+            // Remove existing reply from cache
+            const replyKey = `${accountId}-${uid}`;
+            delete generatedReplies[replyKey];
+            
+            // Regenerate
+            generateReply(accountId, uid);
+            
+            // Update the display to show loading state
+            const replySection = document.querySelector('.reply-section');
+            if (replySection) {
+                replySection.innerHTML = `
+                    <div class="reply-header">
+                        <h3>AI Reply Generation</h3>
+                    </div>
+                    <p>Generating new reply...</p>
+                    <div class="reply-actions">
+                        <button class="btn btn-primary" disabled>Generating...</button>
+                    </div>
+                `;
+            }
+        }
+        
+        function copyReplyToClipboard(replyKey) {
+            const reply = generatedReplies[replyKey];
+            if (reply && reply.reply) {
+                navigator.clipboard.writeText(reply.reply).then(() => {
+                    // Show success feedback
+                    const button = event.target;
+                    const originalText = button.textContent;
+                    button.textContent = 'Copied!';
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-primary');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy reply to clipboard:', err);
+                    alert('Failed to copy to clipboard. Please try selecting and copying manually.');
+                });
+            }
+        }
+        
+        // Socket event listeners
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        socket.on('emails-list', (data) => {
+            const { accountId, emails } = data;
+            emailsData[accountId] = emails;
+            
+            // Store classifications from initial list
+            emails.forEach(email => {
+                if (email.classification) {
+                    const key = `${accountId}-${email.uid}`;
+                    emailClassifications[key] = email.classification;
+                    console.log(`Stored classification from list: ${key} = ${email.classification}`);
+                }
+            });
+            
+            if (currentAccount === accountId) {
+                renderEmails();
+            }
+        });
+        
+        socket.on('email-content', (data) => {
+            if (currentAccount === data.accountId && currentEmail === data.uid) {
+                const key = `${data.accountId}-${data.uid}`;
+                
+                // Update stored classification
+                if (data.classification) {
+                    emailClassifications[key] = data.classification;
+                    console.log(`Updated classification from content: ${key} = ${data.classification}`);
+                }
+                
+                renderEmailContent(data);
+                
+                // Re-render email list to update badges if needed
+                renderEmails();
+            }
+        });
+        
+        // Add this new event listener
+        socket.on('email-content-error', (data) => {
+            if (currentAccount === data.accountId && currentEmail === data.uid) {
+                emailContent.innerHTML = `
+                    <div class="loading" style="color: #F44336;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">⚠️</div>
+                            <strong>Error loading email content</strong>
+                            <p>${data.error || 'Unknown error occurred'}</p>
+                            <button id="retry-button" style="margin-top: 15px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add retry button functionality
+                document.getElementById('retry-button').addEventListener('click', function() {
+                    emailContent.innerHTML = '<div class="loading">Loading email content...</div>';
+                    socket.emit('fetch-email', { accountId: data.accountId, uid: data.uid });
+                });
+            }
+        });
+        
+        // Reply generation event handlers
+        socket.on('reply-generated', (data) => {
+            if (data.success && currentAccount === data.accountId && currentEmail === data.uid) {
+                const replyKey = `${data.accountId}-${data.uid}`;
+                
+                // Store the generated reply
+                generatedReplies[replyKey] = {
+                    reply: data.data.reply.reply,
+                    source: data.data.reply.source,
+                    timestamp: new Date()
+                };
+                
+                console.log('Reply generated successfully:', data.data.reply.source);
+                
+                // Update the reply section
+                const replySection = document.querySelector('.reply-section');
+                if (replySection) {
+                    replySection.innerHTML = `
+                        <div class="reply-header">
+                            <h3>Generated Reply</h3>
+                            <span class="reply-source">Source: ${data.data.reply.source}</span>
+                        </div>
+                        <div class="reply-content">${data.data.reply.reply}</div>
+                        <div class="reply-actions">
+                            <button class="btn btn-primary" onclick="copyReplyToClipboard('${replyKey}')">Copy to Clipboard</button>
+                            <button class="btn btn-secondary" onclick="generateNewReply('${data.accountId}', '${data.uid}')">Generate New Reply</button>
+                        </div>
+                    `;
+                }
+            }
+        });
+        
+        socket.on('reply-error', (data) => {
+            if (currentAccount === data.accountId && currentEmail === data.uid) {
+                console.error('Reply generation failed:', data.error);
+                
+                const replySection = document.querySelector('.reply-section');
+                if (replySection) {
+                    replySection.innerHTML = `
+                        <div class="reply-header">
+                            <h3>Reply Generation Failed</h3>
+                        </div>
+                        <div style="color: #F44336; padding: 10px; background-color: #ffebee; border-radius: 4px; margin-bottom: 10px;">
+                            <strong>Error:</strong> ${data.error}
+                        </div>
+                        <div class="reply-actions">
+                            <button class="btn btn-primary" onclick="generateReply('${data.accountId}', '${data.uid}')">Try Again</button>
+                        </div>
+                    `;
+                }
+            }
+        });
+        
+        // Set up search input
+        searchInput.addEventListener('input', function() {
+            searchQuery = this.value.trim();
+            if (currentAccount) {
+                renderEmails();
+            }
+        });
+        
+        // Set up classification filter
+        classificationFilter.addEventListener('change', function() {
+            selectedClassification = this.value;
+            renderEmails();
+        });
+        
+        // Initialize UI
+        renderAccounts();
+    </script>
+</body>
+</html>
